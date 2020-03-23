@@ -1,10 +1,14 @@
 package com.example.soundtest.Learn;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -17,14 +21,18 @@ import android.widget.ViewSwitcher;
 import com.example.soundtest.R;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class Horof extends AppCompatActivity {
 
     private Button previousBtn,nextBtn,playBtn,pauseBtn,stopBtn,micBtn;
+    private TextView userVoiceConvert;
+    private  static final int REQUEST_CODE_SPEECH_INPUT = 1000;
     int pausecurrentpossition;
-    MediaPlayer mediaPlayer;
+    MediaPlayer horofmedia;
     ImageSwitcher imageSwitcher;
     TextSwitcher textSwitcher;
+    private int currenthorof=0;
 
 
     int[] horof = {
@@ -93,13 +101,17 @@ public class Horof extends AppCompatActivity {
             "জিহ্বার মধ্যখান হইতে উচ্চারিত হয়।",
     };
 
+    int [] horofSound={R.raw.alif,R.raw.ba,R.raw.ta,R.raw.sa,R.raw.jeem,R.raw.ha,R.raw.kha,
+            R.raw.dal,R.raw.jal,R.raw.ro,R.raw.jha,R.raw.seen,R.raw.sheen,R.raw.swad,R.raw.doad,
+            R.raw.toa,R.raw.jowa,R.raw.ain,R.raw.gain,R.raw.faa,R.raw.kof,R.raw.kaf,R.raw.laam,
+            R.raw.meem,R.raw.noon,R.raw.wao,R.raw.haa,R.raw.hamzah,R.raw.ya};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_horof);
 
         init();
-
         buttonclick();
 
         textSwitcher.setFactory(new ViewSwitcher.ViewFactory() {
@@ -123,11 +135,43 @@ public class Horof extends AppCompatActivity {
             }
         });
 
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        switch (requestCode){
+
+            case  REQUEST_CODE_SPEECH_INPUT:{
+
+                if(resultCode == RESULT_OK && null!= data){
+
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    userVoiceConvert.setText(result.get(0));
+                }
+                break;
+            }
+        }
     }
 
     private void buttonclick() {
+
+        micBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"ar-JO");
+
+                try {
+                    startActivityForResult(intent,REQUEST_CODE_SPEECH_INPUT);
+                }catch (Exception e){
+
+                }
+            }
+        });
+
 
         nextBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -138,7 +182,13 @@ public class Horof extends AppCompatActivity {
                     position = position+1;
                     imageSwitcher.setBackgroundResource(horof[position]);
                     textSwitcher.setText(makhraz[position]);
+                    try {
+                        horofmedia = MediaPlayer.create(Horof.this,horofSound[currenthorof]);
+                        currenthorof++;
+                        horofmedia.start();
+                    }catch (Exception e){
 
+                    }
                 }
             }
         });
@@ -152,46 +202,24 @@ public class Horof extends AppCompatActivity {
                     textSwitcher.setText(makhraz[position]);
                     imageSwitcher.setBackgroundResource(horof[position]);
 
-                }
-            }
-        });
-        playBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(mediaPlayer==null) {
-                    mediaPlayer = MediaPlayer.create(getApplicationContext(),R.raw.soundtest);
-                    mediaPlayer.start();
-                }
-                else if(!mediaPlayer.isPlaying()){
-                    mediaPlayer.seekTo(pausecurrentpossition);
-                    mediaPlayer.start();
-                }
-            }
-        });
+                    try {
+                        MediaPlayer.create(Horof.this,horofSound[currenthorof]);
 
-        pauseBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+                        currenthorof--;
+                        horofmedia.start();
+                    }catch (Exception e){
 
-                if(mediaPlayer!=null){
-                    mediaPlayer.pause();
-                    pausecurrentpossition = mediaPlayer.getCurrentPosition();
+
+                    }
+
+
                 }
             }
         });
 
-        stopBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if(mediaPlayer!=null) {
-                    mediaPlayer.stop();
-                    mediaPlayer=null;
-                }
-            }
-        });
 
     }
+
 
     private void init() {
 
@@ -203,5 +231,6 @@ public class Horof extends AppCompatActivity {
         micBtn = findViewById(R.id.micBtn);
         imageSwitcher = findViewById(R.id.imageSwither);
         textSwitcher = findViewById(R.id.textSwitcher);
+        userVoiceConvert = findViewById(R.id.userVoiceText);
     }
 }
